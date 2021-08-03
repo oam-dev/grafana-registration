@@ -1,0 +1,20 @@
+# permissions for end users to view datasourceregistrations.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: datasourceregistration-viewer-role
+rules:
+- apiGroups:
+  - grafana.extension.oam.dev
+  resources:
+  - datasourceregistrations
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - grafana.extension.oam.dev
+  resources:
+  - datasourceregistrations/status
+  verbs:
+  - get

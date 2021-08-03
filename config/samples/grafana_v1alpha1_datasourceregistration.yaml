@@ -1,0 +1,7 @@
+apiVersion: grafana.extension.oam.dev/v1alpha1
+kind: DatasourceRegistration
+metadata:
+  name: datasourceregistration-sample
+spec:
+  # Add fields here
+  foo: bar

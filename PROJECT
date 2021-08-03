@@ -1,0 +1,7 @@
+domain: extension.oam.dev
+repo: github.com/zzxwill/grafana-datasource-registration
+resources:
+- group: grafana
+  kind: DatasourceRegistration
+  version: v1alpha1
+version: "2"
