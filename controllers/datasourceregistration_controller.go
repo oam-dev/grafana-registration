@@ -18,13 +18,18 @@ package controllers
 
 import (
 	"context"
-
+	"fmt"
 	"github.com/go-logr/logr"
+	"github.com/grafana-tools/sdk"
+	"github.com/pkg/errors"
+	"github.com/zzxwill/grafana-datasource-registration/api/v1alpha1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	grafanav1alpha1 "github.com/zzxwill/grafana-datasource-registration/api/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"time"
 )
 
 // DatasourceRegistrationReconciler reconciles a DatasourceRegistration object
@@ -34,20 +39,111 @@ type DatasourceRegistrationReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+const datasourceRegistrationfinalizer = "grafana.extension.oam.dev/datasource"
+
 // +kubebuilder:rbac:groups=grafana.extension.oam.dev,resources=datasourceregistrations,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=grafana.extension.oam.dev,resources=datasourceregistrations/status,verbs=get;update;patch
 
 func (r *DatasourceRegistrationReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
-	_ = r.Log.WithValues("datasourceregistration", req.NamespacedName)
+	var (
+		ctx = context.Background()
+		err error
+		dsr v1alpha1.DatasourceRegistration
+	)
+	if err := r.Get(ctx, req.NamespacedName, &dsr); err != nil {
+		if kerrors.IsNotFound(err) {
+			klog.ErrorS(err, "unable to fetch DatasourceRegistration", "NamespacedName", req.NamespacedName)
+			err = nil
+		}
+		return ctrl.Result{}, err
+	}
 
-	// your logic here
+	dataSourceName := dsr.Spec.Name
+	dataSourceURL := dsr.Spec.URL
+	dataSourceAccess := dsr.Spec.Access
+	dataSourceType := dsr.Spec.Type
+	grafanaURL := dsr.Spec.GrafanaURL
+	basicAuth := fmt.Sprintf("%s:%s", dsr.Spec.AdminUser, dsr.Spec.AdminPassword)
 
-	return ctrl.Result{}, nil
+	c, err := sdk.NewClient(grafanaURL, basicAuth, sdk.DefaultHTTPClient)
+	if err != nil {
+		return ctrl.Result{}, errors.Wrap(err, "Failed to create a client")
+	}
+	dataSources, err := c.GetAllDatasources(ctx)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	var dataSourceExisted bool
+	var existedDataSource *sdk.Datasource
+	for _, existingDS := range dataSources {
+		if existingDS.Name == dataSourceName {
+			dataSourceExisted = true
+			existedDataSource = &existingDS
+			break
+		}
+	}
+
+	if dsr.ObjectMeta.DeletionTimestamp.IsZero() {
+		if !controllerutil.ContainsFinalizer(&dsr, datasourceRegistrationfinalizer) {
+			controllerutil.AddFinalizer(&dsr, datasourceRegistrationfinalizer)
+			if err := r.Client.Update(ctx, &dsr); err != nil {
+				return ctrl.Result{}, errors.Wrap(err, "failed to add a finalizer")
+			}
+		}
+	} else {
+		if dataSourceExisted {
+			if _, err = c.DeleteDatasource(ctx, existedDataSource.ID); err != nil {
+				return ctrl.Result{}, errors.Wrap(err, "error on deleting datasource")
+			}
+		}
+		controllerutil.RemoveFinalizer(&dsr, datasourceRegistrationfinalizer)
+		if err := r.Update(ctx, &dsr); err != nil {
+			return ctrl.Result{RequeueAfter: 3 * time.Second}, errors.Wrap(err, "failed to remove finalizer")
+		}
+		return ctrl.Result{}, nil
+	}
+
+	if dataSourceExisted {
+		existedDataSource.Name = dataSourceName
+		existedDataSource.URL = dataSourceURL
+		existedDataSource.Type = dataSourceType
+		existedDataSource.Access = dataSourceAccess
+		_, err = c.UpdateDatasource(ctx, *existedDataSource)
+		if err != nil {
+			err = errors.Wrap(err, "error on deleting datasource")
+		}
+	} else {
+		ds := sdk.Datasource{
+			Name:   dataSourceName,
+			URL:    dataSourceURL,
+			Type:   dataSourceType,
+			Access: dataSourceAccess,
+		}
+		_, err = c.CreateDatasource(ctx, ds)
+		if err != nil {
+			err = errors.Wrap(err, "failed to add datasource to Grafana")
+		}
+	}
+
+	if err != nil {
+		dsr.Status = v1alpha1.DatasourceRegistrationStatus{
+			Success: false,
+			Message: err.Error(),
+		}
+	} else {
+		dsr.Status = v1alpha1.DatasourceRegistrationStatus{
+			Success: true,
+		}
+	}
+
+	if err := r.Client.Update(ctx, &dsr); err != nil {
+		return ctrl.Result{}, err
+	}
+	return ctrl.Result{}, errors.Wrap(err, "error on importing datasource")
 }
 
 func (r *DatasourceRegistrationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&grafanav1alpha1.DatasourceRegistration{}).
+		For(&v1alpha1.DatasourceRegistration{}).
 		Complete(r)
 }

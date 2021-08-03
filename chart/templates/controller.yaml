@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    control-plane: controller-manager
+  name: system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana-datasource-registration
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: grafana-datasource-registration
+  template:
+    metadata:
+      labels:
+        app: grafana-datasource-registration
+        app.kubernetes.io/name: {{ .Release.Name }}
+        app.kubernetes.io/version: {{ .Values.version }}
+        app.kubernetes.io/part-of: kubevela
+        app.kubernetes.io/managed-by: helm
+    spec:
+      containers:
+        - name: grafana-datasource-registration
+          image: "{{ .Values.image.name }}"
+          imagePullPolicy: {{ .Values.image.imagePullPolicy }}

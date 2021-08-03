@@ -1,0 +1,28 @@
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: grafana-datasource-registration-role
+rules:
+- apiGroups:
+  - grafana.extension.oam.dev
+  resources:
+  - datasourceregistrations
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - grafana.extension.oam.dev
+  resources:
+  - datasourceregistrations/status
+  verbs:
+  - get
+  - patch
+  - update

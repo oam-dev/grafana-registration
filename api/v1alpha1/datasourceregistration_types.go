@@ -25,17 +25,20 @@ import (
 
 // DatasourceRegistrationSpec defines the desired state of DatasourceRegistration
 type DatasourceRegistrationSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of DatasourceRegistration. Edit DatasourceRegistration_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	GrafanaURL    string `json:"grafanaUrl"`
+	AdminUser     string `json:"adminUser"`
+	AdminPassword string `json:"adminPassword"`
+	Name          string `json:"name"`
+	URL           string `json:"url"`
+	// +kubebuilder:default:=proxy
+	Access string `json:"access,omitempty"`
+	Type   string `json:"type"`
 }
 
 // DatasourceRegistrationStatus defines the observed state of DatasourceRegistration
 type DatasourceRegistrationStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Success bool   `json:"success,omitempty"`
+	Message string `json:"message,omitempty"`
 }
 
 // +kubebuilder:object:root=true
