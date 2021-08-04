@@ -23,6 +23,7 @@ import (
 	"github.com/grafana-tools/sdk"
 	"github.com/pkg/errors"
 	"github.com/zzxwill/grafana-datasource-registration/api/v1alpha1"
+	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
@@ -46,9 +47,14 @@ const datasourceRegistrationfinalizer = "grafana.extension.oam.dev/datasource"
 
 func (r *DatasourceRegistrationReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	var (
-		ctx = context.Background()
-		err error
-		dsr v1alpha1.DatasourceRegistration
+		ctx  = context.Background()
+		err  error
+		dsr  v1alpha1.DatasourceRegistration
+		cred v1.Secret
+	)
+	const (
+		grafanaUser = "admin-user"
+		grafanaPassword = "admin-password"
 	)
 	if err := r.Get(ctx, req.NamespacedName, &dsr); err != nil {
 		if kerrors.IsNotFound(err) {
@@ -63,7 +69,16 @@ func (r *DatasourceRegistrationReconciler) Reconcile(req ctrl.Request) (ctrl.Res
 	dataSourceAccess := dsr.Spec.Access
 	dataSourceType := dsr.Spec.Type
 	grafanaURL := dsr.Spec.GrafanaURL
-	basicAuth := fmt.Sprintf("%s:%s", dsr.Spec.AdminUser, dsr.Spec.AdminPassword)
+
+	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: dsr.Spec.CredentialsSecretNamespace, Name: dsr.Spec.CredentialSecret}, &cred); err != nil {
+		return ctrl.Result{}, errors.Wrap(err, "Grafana credential is not provided")
+	}
+
+	if cred.Data[grafanaUser] == nil || cred.Data[grafanaPassword] == nil {
+		return ctrl.Result{}, errors.Wrap(err, fmt.Sprintf("%s or %s isn't in Grafana credential", grafanaUser, grafanaPassword))
+	}
+
+	basicAuth := fmt.Sprintf("%s:%s", string(cred.Data[grafanaUser]), string(cred.Data[grafanaPassword]))
 
 	c, err := sdk.NewClient(grafanaURL, basicAuth, sdk.DefaultHTTPClient)
 	if err != nil {

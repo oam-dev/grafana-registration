@@ -1,11 +1,12 @@
 apiVersion: grafana.extension.oam.dev/v1alpha1
 kind: DatasourceRegistration
 metadata:
-  name: datasourceregistration-sample-2
+  name: datasourceregistration-sample
 spec:
   grafanaUrl: "http://grafana.c4c85a750c53a44a38b3902978f85d8e7.cn-hongkong.alicontainer.com"
-  adminUser: admin
-  adminPassword: CW43pVyOqPmUKeXeYLpBjGkg1b8pmc0hot35zP71
+  credentialSecret: grafana
+  credentialSecretNamespace: grafana
   name: loki
   url: "http://loki.c4c85a750c53a44a38b3902978f85d8e7.cn-hongkong.alicontainer.com"
   type: loki
+  access: proxy

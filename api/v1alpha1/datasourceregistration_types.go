@@ -25,11 +25,12 @@ import (
 
 // DatasourceRegistrationSpec defines the desired state of DatasourceRegistration
 type DatasourceRegistrationSpec struct {
-	GrafanaURL    string `json:"grafanaUrl"`
-	AdminUser     string `json:"adminUser"`
-	AdminPassword string `json:"adminPassword"`
-	Name          string `json:"name"`
-	URL           string `json:"url"`
+	GrafanaURL       string `json:"grafanaUrl"`
+	CredentialSecret string `json:"credentialSecret"`
+	// +kubebuilder:default:=default
+	CredentialsSecretNamespace string `json:"credentialSecretNamespace,omitempty"`
+	Name                       string `json:"name"`
+	URL                        string `json:"url"`
 	// +kubebuilder:default:=proxy
 	Access string `json:"access,omitempty"`
 	Type   string `json:"type"`

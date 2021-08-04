@@ -40,9 +40,10 @@ spec:
               access:
                 default: proxy
                 type: string
-              adminPassword:
+              credentialSecret:
                 type: string
-              adminUser:
+              credentialSecretNamespace:
+                default: default
                 type: string
               grafanaUrl:
                 type: string
@@ -53,8 +54,7 @@ spec:
               url:
                 type: string
             required:
-            - adminPassword
-            - adminUser
+            - credentialSecret
             - grafanaUrl
             - name
             - type
