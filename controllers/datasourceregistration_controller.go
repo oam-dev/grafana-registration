@@ -53,7 +53,7 @@ func (r *DatasourceRegistrationReconciler) Reconcile(req ctrl.Request) (ctrl.Res
 		cred v1.Secret
 	)
 	const (
-		grafanaUser = "admin-user"
+		grafanaUser     = "admin-user"
 		grafanaPassword = "admin-password"
 	)
 	if err := r.Get(ctx, req.NamespacedName, &dsr); err != nil {
