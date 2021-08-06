@@ -70,6 +70,8 @@ func (r *DatasourceRegistrationReconciler) Reconcile(req ctrl.Request) (ctrl.Res
 	dataSourceType := dsr.Spec.Type
 	grafanaURL := dsr.Spec.GrafanaURL
 
+	klog.InfoS("adding Datasource", "Name", dataSourceName)
+
 	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: dsr.Spec.CredentialsSecretNamespace, Name: dsr.Spec.CredentialSecret}, &cred); err != nil {
 		return ctrl.Result{}, errors.Wrap(err, "Grafana credential is not provided")
 	}
@@ -141,11 +143,13 @@ func (r *DatasourceRegistrationReconciler) Reconcile(req ctrl.Request) (ctrl.Res
 	}
 
 	if err != nil {
+		klog.ErrorS(err, "failed to add datasource to Grafana", "Name", dataSourceName)
 		dsr.Status = v1alpha1.DatasourceRegistrationStatus{
 			Success: false,
 			Message: err.Error(),
 		}
 	} else {
+		klog.InfoS("successfully added datasource to Grafana", "Name", dataSourceName)
 		dsr.Status = v1alpha1.DatasourceRegistrationStatus{
 			Success: true,
 		}
