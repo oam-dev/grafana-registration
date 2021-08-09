@@ -120,14 +120,15 @@ func (r *DatasourceRegistrationReconciler) Reconcile(req ctrl.Request) (ctrl.Res
 		return ctrl.Result{}, nil
 	}
 
+	var operationErr error
 	if dataSourceExisted {
 		existedDataSource.Name = dataSourceName
 		existedDataSource.URL = dataSourceURL
 		existedDataSource.Type = dataSourceType
 		existedDataSource.Access = dataSourceAccess
-		_, err = c.UpdateDatasource(ctx, *existedDataSource)
-		if err != nil {
-			err = errors.Wrap(err, "error on deleting datasource")
+		_, operationErr = c.UpdateDatasource(ctx, *existedDataSource)
+		if operationErr != nil {
+			operationErr = errors.Wrap(operationErr, "error on deleting datasource")
 		}
 	} else {
 		ds := sdk.Datasource{
@@ -136,14 +137,14 @@ func (r *DatasourceRegistrationReconciler) Reconcile(req ctrl.Request) (ctrl.Res
 			Type:   dataSourceType,
 			Access: dataSourceAccess,
 		}
-		_, err = c.CreateDatasource(ctx, ds)
-		if err != nil {
-			err = errors.Wrap(err, "failed to add datasource to Grafana")
+		_, operationErr = c.CreateDatasource(ctx, ds)
+		if operationErr != nil {
+			operationErr = errors.Wrap(operationErr, "failed to add datasource to Grafana")
 		}
 	}
 
-	if err != nil {
-		klog.ErrorS(err, "failed to add datasource to Grafana", "Name", dataSourceName)
+	if operationErr != nil {
+		klog.ErrorS(operationErr, "failed to add datasource to Grafana", "Name", dataSourceName)
 		dsr.Status = v1alpha1.DatasourceRegistrationStatus{
 			Success: false,
 			Message: err.Error(),
