@@ -1,6 +1,6 @@
 
 # Image URL to use all building/pushing image targets
-IMG ?= oamdev/grafana-datasource-registration:0.0.1
+IMG ?= oamdev/grafana-datasource-registration:0.0.2
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
@@ -41,7 +41,6 @@ deploy: manifests
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=chart/crds
-	mv config/rbac/role.yaml chart/templates/
 
 # Run go fmt against code
 fmt:

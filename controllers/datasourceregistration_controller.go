@@ -56,7 +56,7 @@ func (r *DatasourceRegistrationReconciler) Reconcile(req ctrl.Request) (ctrl.Res
 		grafanaUser     = "admin-user"
 		grafanaPassword = "admin-password"
 	)
-	if err := r.Get(ctx, req.NamespacedName, &dsr); err != nil {
+	if err = r.Get(ctx, req.NamespacedName, &dsr); err != nil {
 		if kerrors.IsNotFound(err) {
 			klog.ErrorS(err, "unable to fetch DatasourceRegistration", "NamespacedName", req.NamespacedName)
 			err = nil
@@ -70,7 +70,8 @@ func (r *DatasourceRegistrationReconciler) Reconcile(req ctrl.Request) (ctrl.Res
 	dataSourceType := dsr.Spec.Type
 	grafanaURL := dsr.Spec.GrafanaURL
 
-	klog.InfoS("adding Datasource", "Name", dataSourceName)
+	klog.InfoS("adding Datasource to Grafana", "Name", dataSourceName, "URL", dataSourceURL,
+		"Access", dataSourceAccess, "Type", dataSourceType, "GrafanaURL", grafanaURL)
 
 	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: dsr.Spec.CredentialsSecretNamespace, Name: dsr.Spec.CredentialSecret}, &cred); err != nil {
 		return ctrl.Result{}, errors.Wrap(err, "Grafana credential is not provided")
@@ -90,6 +91,7 @@ func (r *DatasourceRegistrationReconciler) Reconcile(req ctrl.Request) (ctrl.Res
 	if err != nil {
 		return ctrl.Result{}, err
 	}
+	klog.InfoS("All datasources of Grafana", "Datasources", dataSources)
 	var dataSourceExisted bool
 	var existedDataSource *sdk.Datasource
 	for _, existingDS := range dataSources {
@@ -100,23 +102,37 @@ func (r *DatasourceRegistrationReconciler) Reconcile(req ctrl.Request) (ctrl.Res
 		}
 	}
 
+	if dataSourceExisted {
+		klog.Info("The target Datasource doesn't exist", "Name", dataSourceName, "URL")
+	}
+
 	if dsr.ObjectMeta.DeletionTimestamp.IsZero() {
 		if !controllerutil.ContainsFinalizer(&dsr, datasourceRegistrationfinalizer) {
 			controllerutil.AddFinalizer(&dsr, datasourceRegistrationfinalizer)
 			if err := r.Client.Update(ctx, &dsr); err != nil {
+				klog.InfoS("failed to add a finalizer to DataSourceRegistration", "Name", dsr.Name,
+					"Namespace", dsr.Namespace)
 				return ctrl.Result{}, errors.Wrap(err, "failed to add a finalizer")
 			}
+			klog.InfoS("successfully added a finalizer to DataSourceRegistration", "Name", dsr.Name,
+				"Namespace", dsr.Namespace)
 		}
 	} else {
 		if dataSourceExisted {
 			if _, err = c.DeleteDatasource(ctx, existedDataSource.ID); err != nil {
+				klog.InfoS("failed to delete DataSourceRegistration", "Name", dsr.Name,
+					"Namespace", dsr.Namespace)
 				return ctrl.Result{}, errors.Wrap(err, "error on deleting datasource")
 			}
+			klog.InfoS("successfully deleted DataSourceRegistration", "Name", dsr.Name,
+				"Namespace", dsr.Namespace)
 		}
 		controllerutil.RemoveFinalizer(&dsr, datasourceRegistrationfinalizer)
 		if err := r.Update(ctx, &dsr); err != nil {
 			return ctrl.Result{RequeueAfter: 3 * time.Second}, errors.Wrap(err, "failed to remove finalizer")
 		}
+		klog.InfoS("successfully delete the finalizer from DataSourceRegistration", "Name", dsr.Name,
+			"Namespace", dsr.Namespace)
 		return ctrl.Result{}, nil
 	}
 
@@ -144,13 +160,13 @@ func (r *DatasourceRegistrationReconciler) Reconcile(req ctrl.Request) (ctrl.Res
 	}
 
 	if operationErr != nil {
-		klog.ErrorS(operationErr, "failed to add datasource to Grafana", "Name", dataSourceName)
+		klog.ErrorS(operationErr, "failed to add or update datasource to Grafana", "Name", dataSourceName)
 		dsr.Status = v1alpha1.DatasourceRegistrationStatus{
 			Success: false,
 			Message: err.Error(),
 		}
 	} else {
-		klog.InfoS("successfully added datasource to Grafana", "Name", dataSourceName)
+		klog.InfoS("successfully added or updated datasource to Grafana", "Name", dataSourceName)
 		dsr.Status = v1alpha1.DatasourceRegistrationStatus{
 			Success: true,
 		}
@@ -159,6 +175,8 @@ func (r *DatasourceRegistrationReconciler) Reconcile(req ctrl.Request) (ctrl.Res
 	if err := r.Client.Update(ctx, &dsr); err != nil {
 		return ctrl.Result{}, err
 	}
+	klog.InfoS("successfully updated the status of DataSourceRegistration", "Name", dsr.Name,
+		"Namespace", dsr.Namespace)
 	return ctrl.Result{}, errors.Wrap(err, "error on importing datasource")
 }
 
