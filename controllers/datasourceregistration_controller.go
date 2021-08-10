@@ -103,7 +103,7 @@ func (r *DatasourceRegistrationReconciler) Reconcile(req ctrl.Request) (ctrl.Res
 	}
 
 	if dataSourceExisted {
-		klog.Info("The target Datasource doesn't exist", "Name", dataSourceName, "URL")
+		klog.InfoS("The target Datasource doesn't exist", "Name", dataSourceName, "URL")
 	}
 
 	if dsr.ObjectMeta.DeletionTimestamp.IsZero() {
