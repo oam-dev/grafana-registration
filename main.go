@@ -41,6 +41,7 @@ func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 
 	_ = grafanav1alpha1.AddToScheme(scheme)
+
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -78,6 +79,16 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "DatasourceRegistration")
 		os.Exit(1)
 	}
+
+	if err = (&controllers.DatasourceRegistrationDeprecatedReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("DatasourceRegistrationDeprecated"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "DatasourceRegistrationDeprecated")
+		os.Exit(1)
+	}
+
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")

@@ -19,8 +19,6 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: DatasourceRegistration is the Schema for the datasourceregistrations
-          API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -37,28 +35,49 @@ spec:
           spec:
             description: DatasourceRegistrationSpec defines the desired state of DatasourceRegistration
             properties:
-              access:
-                default: proxy
-                type: string
-              credentialSecret:
-                type: string
-              credentialSecretNamespace:
-                default: default
-                type: string
-              grafanaUrl:
-                type: string
-              name:
-                type: string
-              type:
-                type: string
-              url:
-                type: string
+              datasource:
+                description: Datasource defines the information of a DataSource, like
+                  Loki, Prometheus
+                properties:
+                  access:
+                    default: proxy
+                    type: string
+                  name:
+                    type: string
+                  namespace:
+                    default: default
+                    type: string
+                  service:
+                    type: string
+                  type:
+                    type: string
+                required:
+                - name
+                - namespace
+                - service
+                - type
+                type: object
+              grafana:
+                description: Grafana defines the access information for Grafana
+                properties:
+                  credentialSecret:
+                    type: string
+                  credentialSecretNamespace:
+                    default: default
+                    type: string
+                  namespace:
+                    default: default
+                    type: string
+                  service:
+                    type: string
+                required:
+                - credentialSecret
+                - namespace
+                - service
+                type: object
             required:
-            - credentialSecret
-            - grafanaUrl
-            - name
-            - type
-            - url
+            - datasource
+            - grafana
             type: object
           status:
             description: DatasourceRegistrationStatus defines the observed state of

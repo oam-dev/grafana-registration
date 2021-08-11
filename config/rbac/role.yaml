@@ -1,0 +1,48 @@
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: manager-role
+rules:
+- apiGroups:
+  - grafana.extension.oam.dev
+  resources:
+  - datasourceregistrationdeprecated
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - grafana.extension.oam.dev
+  resources:
+  - datasourceregistrationdeprecateds/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - grafana.extension.oam.dev
+  resources:
+  - datasourceregistrations
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - grafana.extension.oam.dev
+  resources:
+  - datasourceregistrations/status
+  verbs:
+  - get
+  - patch
+  - update

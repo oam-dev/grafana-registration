@@ -7,6 +7,7 @@ rules:
   - grafana.extension.oam.dev
   resources:
   - datasourceregistrations
+  - datasourceregistrationdeprecateds
   verbs:
   - create
   - delete
@@ -28,6 +29,7 @@ rules:
     - ""
   resources:
     - secrets
+    - services
   verbs:
     - create
     - delete

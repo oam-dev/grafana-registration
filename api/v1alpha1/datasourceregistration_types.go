@@ -25,12 +25,26 @@ import (
 
 // DatasourceRegistrationSpec defines the desired state of DatasourceRegistration
 type DatasourceRegistrationSpec struct {
-	GrafanaURL       string `json:"grafanaUrl"`
+	Grafana    Grafana    `json:"grafana"`
+	Datasource Datasource `json:"datasource"`
+}
+
+// Grafana defines the access information for Grafana
+type Grafana struct {
+	Service string `json:"service"`
+	// +kubebuilder:default:=default
+	Namespace        string `json:"namespace"`
 	CredentialSecret string `json:"credentialSecret"`
 	// +kubebuilder:default:=default
 	CredentialsSecretNamespace string `json:"credentialSecretNamespace,omitempty"`
-	Name                       string `json:"name"`
-	URL                        string `json:"url"`
+}
+
+// Datasource defines the information of a DataSource, like Loki, Prometheus
+type Datasource struct {
+	Name    string `json:"name"`
+	Service string `json:"service"`
+	// +kubebuilder:default:=default
+	Namespace string `json:"namespace"`
 	// +kubebuilder:default:=proxy
 	Access string `json:"access,omitempty"`
 	Type   string `json:"type"`
@@ -42,9 +56,9 @@ type DatasourceRegistrationStatus struct {
 	Message string `json:"message,omitempty"`
 }
 
-// +kubebuilder:object:root=true
+// DatasourceRegistration is the Schema for the DatasourceRegistration API
 
-// DatasourceRegistration is the Schema for the datasourceregistrations API
+// +kubebuilder:object:root=true
 type DatasourceRegistration struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

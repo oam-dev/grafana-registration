@@ -1,7 +1,7 @@
 replicaCount: 1
 
-version: 0.0.2
+version: 0.0.3
 
 image:
-  name: oamdev/grafana-datasource-registration:0.0.2
+  name: oamdev/grafana-datasource-registration:0.0.3
   imagePullPolicy: Always

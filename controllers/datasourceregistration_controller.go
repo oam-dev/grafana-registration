@@ -19,18 +19,19 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"github.com/go-logr/logr"
 	"github.com/grafana-tools/sdk"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"github.com/zzxwill/grafana-datasource-registration/api/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"time"
+
+	"github.com/zzxwill/grafana-datasource-registration/api/v1alpha1"
 )
 
 // DatasourceRegistrationReconciler reconciles a DatasourceRegistration object
@@ -40,22 +41,16 @@ type DatasourceRegistrationReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-const datasourceRegistrationfinalizer = "grafana.extension.oam.dev/datasource"
-
 // +kubebuilder:rbac:groups=grafana.extension.oam.dev,resources=datasourceregistrations,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=grafana.extension.oam.dev,resources=datasourceregistrations/status,verbs=get;update;patch
 
 func (r *DatasourceRegistrationReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	var (
-		ctx  = context.Background()
-		err  error
-		dsr  v1alpha1.DatasourceRegistration
-		cred v1.Secret
+		ctx = context.Background()
+		err error
+		dsr v1alpha1.DatasourceRegistration
 	)
-	const (
-		grafanaUser     = "admin-user"
-		grafanaPassword = "admin-password"
-	)
+
 	if err = r.Get(ctx, req.NamespacedName, &dsr); err != nil {
 		if kerrors.IsNotFound(err) {
 			klog.ErrorS(err, "unable to fetch DatasourceRegistration", "NamespacedName", req.NamespacedName)
@@ -64,32 +59,85 @@ func (r *DatasourceRegistrationReconciler) Reconcile(req ctrl.Request) (ctrl.Res
 		return ctrl.Result{}, err
 	}
 
-	dataSourceName := dsr.Spec.Name
-	dataSourceURL := dsr.Spec.URL
-	dataSourceAccess := dsr.Spec.Access
-	dataSourceType := dsr.Spec.Type
-	grafanaURL := dsr.Spec.GrafanaURL
+	klog.InfoS("Trying to retrieve Grafana Service", "Namespace", dsr.Spec.Grafana.Namespace,
+		"Name", dsr.Spec.Grafana.Service)
+	grafanaURL, err := r.getServiceURL(ctx, dsr.Spec.Grafana.Namespace, dsr.Spec.Grafana.Service)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	klog.InfoS("Trying to retrieve Datasource Service", "Namespace", dsr.Spec.Grafana.Namespace,
+		"Name", dsr.Spec.Grafana.Service)
+	dataSourceURL, err := r.getServiceURL(ctx, dsr.Spec.Datasource.Namespace, dsr.Spec.Datasource.Service)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if err := datasourceOperation(ctx, r.Client, dsr, grafanaURL, dataSourceURL); err != nil {
+		klog.ErrorS(err, "failed to add or update datasource to Grafana", "Name", dsr.Spec.Datasource.Name)
+		dsr.Status = v1alpha1.DatasourceRegistrationStatus{
+			Success: false,
+			Message: err.Error(),
+		}
+		if updateErr := r.Client.Update(ctx, &dsr); updateErr != nil {
+			return ctrl.Result{}, updateErr
+		}
+		return ctrl.Result{}, err
+	}
+
+	klog.InfoS("successfully added or updated datasource to Grafana", "Name", dsr.Spec.Datasource.Name)
+	dsr.Status = v1alpha1.DatasourceRegistrationStatus{
+		Success: true,
+	}
+	if err := r.Client.Update(ctx, &dsr); err != nil {
+		return ctrl.Result{}, err
+	}
+	klog.InfoS("successfully updated the status of DataSourceRegistration", "Name", dsr.Name,
+		"Namespace", dsr.Namespace)
+	return ctrl.Result{}, errors.Wrap(err, "error on importing datasource")
+}
+
+func (r *DatasourceRegistrationReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&v1alpha1.DatasourceRegistration{}).
+		Complete(r)
+}
+
+func (r *DatasourceRegistrationReconciler) getServiceURL(ctx context.Context, namespace, name string) (string, error) {
+	var svc v1.Service
+	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, &svc); err != nil {
+		klog.ErrorS(err, "failed to get service")
+		return "", errors.Wrap(err, "failed to get service")
+	}
+	klog.InfoS("successfully retrieved Service")
+	if svc.Spec.ClusterIP == "" || len(svc.Spec.Ports) == 0 {
+		errMsg := "The ClusterIP or Port of the Service is not rendered"
+		klog.Info(errMsg)
+		return "", errors.New(errMsg)
+	}
+	return fmt.Sprintf("http://%s:%d", svc.Spec.ClusterIP, svc.Spec.Ports[0].Port), nil
+}
+
+func datasourceOperation(ctx context.Context, k8sClient client.Client, dsr v1alpha1.DatasourceRegistration, grafanaURL, dataSourceURL string) error {
+	dataSourceName := dsr.Spec.Datasource.Name
+	dataSourceAccess := dsr.Spec.Datasource.Access
+	dataSourceType := dsr.Spec.Datasource.Type
 
 	klog.InfoS("adding Datasource to Grafana", "Name", dataSourceName, "URL", dataSourceURL,
 		"Access", dataSourceAccess, "Type", dataSourceType, "GrafanaURL", grafanaURL)
 
-	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: dsr.Spec.CredentialsSecretNamespace, Name: dsr.Spec.CredentialSecret}, &cred); err != nil {
-		return ctrl.Result{}, errors.Wrap(err, "Grafana credential is not provided")
+	basicAuth, err := getGrafanaAuth(ctx, k8sClient, dsr.Spec.Grafana.CredentialsSecretNamespace, dsr.Spec.Grafana.CredentialSecret)
+	if err != nil {
+		return err
 	}
-
-	if cred.Data[grafanaUser] == nil || cred.Data[grafanaPassword] == nil {
-		return ctrl.Result{}, errors.Wrap(err, fmt.Sprintf("%s or %s isn't in Grafana credential", grafanaUser, grafanaPassword))
-	}
-
-	basicAuth := fmt.Sprintf("%s:%s", string(cred.Data[grafanaUser]), string(cred.Data[grafanaPassword]))
 
 	c, err := sdk.NewClient(grafanaURL, basicAuth, sdk.DefaultHTTPClient)
 	if err != nil {
-		return ctrl.Result{}, errors.Wrap(err, "Failed to create a client")
+		return errors.Wrap(err, "Failed to create a client")
 	}
 	dataSources, err := c.GetAllDatasources(ctx)
 	if err != nil {
-		return ctrl.Result{}, err
+		return err
 	}
 	klog.InfoS("All datasources of Grafana", "Datasources", dataSources)
 	var dataSourceExisted bool
@@ -109,10 +157,10 @@ func (r *DatasourceRegistrationReconciler) Reconcile(req ctrl.Request) (ctrl.Res
 	if dsr.ObjectMeta.DeletionTimestamp.IsZero() {
 		if !controllerutil.ContainsFinalizer(&dsr, datasourceRegistrationfinalizer) {
 			controllerutil.AddFinalizer(&dsr, datasourceRegistrationfinalizer)
-			if err := r.Client.Update(ctx, &dsr); err != nil {
+			if err := k8sClient.Update(ctx, &dsr); err != nil {
 				klog.InfoS("failed to add a finalizer to DataSourceRegistration", "Name", dsr.Name,
 					"Namespace", dsr.Namespace)
-				return ctrl.Result{}, errors.Wrap(err, "failed to add a finalizer")
+				return errors.Wrap(err, "failed to add a finalizer")
 			}
 			klog.InfoS("successfully added a finalizer to DataSourceRegistration", "Name", dsr.Name,
 				"Namespace", dsr.Namespace)
@@ -122,18 +170,18 @@ func (r *DatasourceRegistrationReconciler) Reconcile(req ctrl.Request) (ctrl.Res
 			if _, err = c.DeleteDatasource(ctx, existedDataSource.ID); err != nil {
 				klog.InfoS("failed to delete DataSourceRegistration", "Name", dsr.Name,
 					"Namespace", dsr.Namespace)
-				return ctrl.Result{}, errors.Wrap(err, "error on deleting datasource")
+				return errors.Wrap(err, "error on deleting datasource")
 			}
 			klog.InfoS("successfully deleted DataSourceRegistration", "Name", dsr.Name,
 				"Namespace", dsr.Namespace)
 		}
 		controllerutil.RemoveFinalizer(&dsr, datasourceRegistrationfinalizer)
-		if err := r.Update(ctx, &dsr); err != nil {
-			return ctrl.Result{RequeueAfter: 3 * time.Second}, errors.Wrap(err, "failed to remove finalizer")
+		if err := k8sClient.Update(ctx, &dsr); err != nil {
+			return errors.Wrap(err, "failed to remove finalizer")
 		}
 		klog.InfoS("successfully delete the finalizer from DataSourceRegistration", "Name", dsr.Name,
 			"Namespace", dsr.Namespace)
-		return ctrl.Result{}, nil
+		return nil
 	}
 
 	var operationErr error
@@ -159,29 +207,5 @@ func (r *DatasourceRegistrationReconciler) Reconcile(req ctrl.Request) (ctrl.Res
 		}
 	}
 
-	if operationErr != nil {
-		klog.ErrorS(operationErr, "failed to add or update datasource to Grafana", "Name", dataSourceName)
-		dsr.Status = v1alpha1.DatasourceRegistrationStatus{
-			Success: false,
-			Message: err.Error(),
-		}
-	} else {
-		klog.InfoS("successfully added or updated datasource to Grafana", "Name", dataSourceName)
-		dsr.Status = v1alpha1.DatasourceRegistrationStatus{
-			Success: true,
-		}
-	}
-
-	if err := r.Client.Update(ctx, &dsr); err != nil {
-		return ctrl.Result{}, err
-	}
-	klog.InfoS("successfully updated the status of DataSourceRegistration", "Name", dsr.Name,
-		"Namespace", dsr.Namespace)
-	return ctrl.Result{}, errors.Wrap(err, "error on importing datasource")
-}
-
-func (r *DatasourceRegistrationReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.DatasourceRegistration{}).
-		Complete(r)
+	return errors.Wrap(operationErr, "error on importing datasource")
 }

@@ -1,0 +1,12 @@
+apiVersion: grafana.extension.oam.dev/v1alpha1
+kind: DatasourceRegistrationDeprecated
+metadata:
+  name: sample-clusterip
+spec:
+  grafanaUrl: "http://192.168.33.240"
+  credentialSecret: grafana
+  credentialSecretNamespace: observability
+  name: loki-clusterip
+  url: "http://192.168.229.206:3100"
+  type: loki
+  access: proxy
