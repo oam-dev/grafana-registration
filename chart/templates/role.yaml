@@ -38,3 +38,22 @@ rules:
     - patch
     - update
     - watch
+
+- apiGroups:
+    - grafana.extension.oam.dev
+  resources:
+    - importdashboards
+  verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+- apiGroups:
+    - grafana.extension.oam.dev
+  resources:
+    - importdashboards/status
+  verbs:
+    - get

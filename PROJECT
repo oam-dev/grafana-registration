@@ -4,4 +4,7 @@ resources:
 - group: grafana
   kind: DatasourceRegistration
   version: v1alpha1
+- group: grafana
+  kind: ImportDashboard
+  version: v1alpha1
 version: "2"

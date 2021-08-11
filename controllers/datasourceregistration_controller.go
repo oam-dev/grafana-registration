@@ -18,13 +18,11 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"github.com/grafana-tools/sdk"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
@@ -61,14 +59,14 @@ func (r *DatasourceRegistrationReconciler) Reconcile(req ctrl.Request) (ctrl.Res
 
 	klog.InfoS("Trying to retrieve Grafana Service", "Namespace", dsr.Spec.Grafana.Namespace,
 		"Name", dsr.Spec.Grafana.Service)
-	grafanaURL, err := r.getServiceURL(ctx, dsr.Spec.Grafana.Namespace, dsr.Spec.Grafana.Service)
+	grafanaURL, err := getServiceURL(ctx, r.Client, dsr.Spec.Grafana.Namespace, dsr.Spec.Grafana.Service)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
 	klog.InfoS("Trying to retrieve Datasource Service", "Namespace", dsr.Spec.Grafana.Namespace,
 		"Name", dsr.Spec.Grafana.Service)
-	dataSourceURL, err := r.getServiceURL(ctx, dsr.Spec.Datasource.Namespace, dsr.Spec.Datasource.Service)
+	dataSourceURL, err := getServiceURL(ctx, r.Client, dsr.Spec.Datasource.Namespace, dsr.Spec.Datasource.Service)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -101,21 +99,6 @@ func (r *DatasourceRegistrationReconciler) SetupWithManager(mgr ctrl.Manager) er
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.DatasourceRegistration{}).
 		Complete(r)
-}
-
-func (r *DatasourceRegistrationReconciler) getServiceURL(ctx context.Context, namespace, name string) (string, error) {
-	var svc v1.Service
-	if err := r.Client.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, &svc); err != nil {
-		klog.ErrorS(err, "failed to get service")
-		return "", errors.Wrap(err, "failed to get service")
-	}
-	klog.InfoS("successfully retrieved Service")
-	if svc.Spec.ClusterIP == "" || len(svc.Spec.Ports) == 0 {
-		errMsg := "The ClusterIP or Port of the Service is not rendered"
-		klog.Info(errMsg)
-		return "", errors.New(errMsg)
-	}
-	return fmt.Sprintf("http://%s:%d", svc.Spec.ClusterIP, svc.Spec.Ports[0].Port), nil
 }
 
 func datasourceOperation(ctx context.Context, k8sClient client.Client, dsr v1alpha1.DatasourceRegistration, grafanaURL, dataSourceURL string) error {

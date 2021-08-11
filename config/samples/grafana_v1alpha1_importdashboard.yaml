@@ -1,0 +1,11 @@
+apiVersion: grafana.extension.oam.dev/v1alpha1
+kind: ImportDashboard
+metadata:
+  name: sample
+spec:
+  grafana:
+    service: grafana
+    namespace: default
+    credentialSecret: grafana
+    credentialSecretNamespace: default
+  url: "https://raw.githubusercontent.com/zzxwill/grafana-dashboards/master/Kubernetes_for_Prometheus_Dashboard_CN_20201209_1628671317889.json"
