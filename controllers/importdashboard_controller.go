@@ -74,17 +74,19 @@ func (r *ImportDashboardReconciler) Reconcile(req ctrl.Request) (ctrl.Result, er
 		return ctrl.Result{}, err
 	}
 
-	board, err := downloadGrafanaDashboard(dashboard.Spec.URL)
-	if err != nil {
-		klog.InfoS("failed to downloaded Grafana Dashboard from RUL", "RUL", dashboard.Spec.URL)
-		return ctrl.Result{}, err
-	}
-	klog.InfoS("successfully downloaded Grafana Dashboard and converted it to a *sdk.Board object", "Title", board.Title)
+	for _, url := range dashboard.Spec.URLS {
+		board, err := downloadGrafanaDashboard(url)
+		if err != nil {
+			klog.InfoS("failed to downloaded Grafana Dashboard from RUL", "RUL", dashboard.Spec.URLS)
+			return ctrl.Result{}, err
+		}
+		klog.InfoS("successfully downloaded Grafana Dashboard and converted it to a *sdk.Board object", "Title", board.Title)
 
-	if err := importDashboard(ctx, grafanaURL, basicAuth, board); err != nil {
-		return ctrl.Result{}, err
+		if err := importDashboard(ctx, grafanaURL, basicAuth, board); err != nil {
+			return ctrl.Result{}, err
+		}
+		klog.InfoS("successfully imported a Grafana Dashboard", "Title", board.Title)
 	}
-	klog.InfoS("successfully imported a Grafana Dashboard", "Title", board.Title)
 
 	// TODO(zzxwill) add a finalizer and delete Dashboard when this CR is deleted.
 
