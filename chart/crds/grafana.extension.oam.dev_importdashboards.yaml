@@ -54,11 +54,13 @@ spec:
                 - namespace
                 - service
                 type: object
-              url:
-                type: string
+              urls:
+                items:
+                  type: string
+                type: array
             required:
             - grafana
-            - url
+            - urls
             type: object
           status:
             description: ImportDashboardStatus defines the observed state of ImportDashboard

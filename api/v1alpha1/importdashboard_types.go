@@ -23,7 +23,7 @@ import (
 // ImportDashboardSpec defines the desired state of ImportDashboard
 type ImportDashboardSpec struct {
 	Grafana Grafana  `json:"grafana"`
-	URLS     []string `json:"urls"`
+	URLS    []string `json:"urls"`
 }
 
 // ImportDashboardStatus defines the observed state of ImportDashboard
