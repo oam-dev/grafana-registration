@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/grafana-tools/sdk"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
@@ -22,8 +23,10 @@ func importDashboard(ctx context.Context, grafanaURL, basicAuth string, board *s
 		Overwrite: true,
 	}
 
-	if _, _, err := c.GetDashboardByUID(ctx, board.UID); err != nil {
+	if existedBoard, _, err := c.GetDashboardByUID(ctx, board.UID); err != nil {
 		board.ID = 0
+	} else {
+		board.ID = existedBoard.ID
 	}
 
 	_, err = c.SetDashboard(ctx, *board, params)

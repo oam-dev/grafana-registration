@@ -16,3 +16,5 @@ require (
 	k8s.io/klog/v2 v2.10.0
 	sigs.k8s.io/controller-runtime v0.6.2
 )
+
+replace github.com/grafana-tools/sdk v0.0.0-20210714133701-11b1efc100c9 => github.com/zzxwill/grafana-sdk v0.9.1
