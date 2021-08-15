@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: grafana-datasource-registration-role
+  name: grafana-configuration-role
 rules:
 - apiGroups:
   - grafana.extension.oam.dev

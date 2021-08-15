@@ -8,23 +8,23 @@ metadata:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: grafana-datasource-registration
+  name: grafana-configuration
   namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: grafana-datasource-registration
+      app: grafana-configuration
   template:
     metadata:
       labels:
-        app: grafana-datasource-registration
+        app: grafana-configuration
         app.kubernetes.io/name: {{ .Release.Name }}
         app.kubernetes.io/version: {{ .Values.version }}
         app.kubernetes.io/part-of: kubevela
         app.kubernetes.io/managed-by: helm
     spec:
       containers:
-        - name: grafana-datasource-registration
+        - name: grafana-configuration
           image: "{{ .Values.image.name }}"
           imagePullPolicy: {{ .Values.image.imagePullPolicy }}

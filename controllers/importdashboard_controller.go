@@ -26,7 +26,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/zzxwill/grafana-datasource-registration/api/v1alpha1"
+	"github.com/zzxwill/grafana-configuration/api/v1alpha1"
 )
 
 // ImportDashboardReconciler reconciles a ImportDashboard object

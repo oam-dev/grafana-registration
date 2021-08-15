@@ -22,7 +22,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"github.com/zzxwill/grafana-datasource-registration/api/v1alpha1"
+	"github.com/zzxwill/grafana-configuration/api/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"

@@ -29,7 +29,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	grafanav1alpha1 "github.com/zzxwill/grafana-datasource-registration/api/v1alpha1"
+	grafanav1alpha1 "github.com/zzxwill/grafana-configuration/api/v1alpha1"
 	// +kubebuilder:scaffold:imports
 )
 

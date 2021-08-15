@@ -27,8 +27,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	grafanav1alpha1 "github.com/zzxwill/grafana-datasource-registration/api/v1alpha1"
-	"github.com/zzxwill/grafana-datasource-registration/controllers"
+	grafanav1alpha1 "github.com/zzxwill/grafana-configuration/api/v1alpha1"
+	"github.com/zzxwill/grafana-configuration/controllers"
 	// +kubebuilder:scaffold:imports
 )
 

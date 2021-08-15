@@ -1,6 +1,6 @@
 
 # Image URL to use all building/pushing image targets
-IMG ?= oamdev/grafana-datasource-registration:0.0.4
+IMG ?= oamdev/grafana-configuration:0.0.5
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 

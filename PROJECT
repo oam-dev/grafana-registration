@@ -1,5 +1,5 @@
 domain: extension.oam.dev
-repo: github.com/zzxwill/grafana-datasource-registration
+repo: github.com/zzxwill/grafana-configuration
 resources:
 - group: grafana
   kind: DatasourceRegistration
