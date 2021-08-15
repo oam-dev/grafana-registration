@@ -1,2 +1,3 @@
-# grafana-datasource-registration
-Register a Datasource to Grafana
+# Grafana Configuration
+- Register a Datasource to Grafana
+- Import one or more Dashboards to Grafana
