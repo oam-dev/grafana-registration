@@ -1,7 +1,7 @@
 replicaCount: 1
 
-version: 0.0.5
+version: 0.0.6
 
 image:
-  name: oamdev/grafana-configuration:0.0.5
+  name: oamdev/grafana-configuration:0.0.6
   imagePullPolicy: Always
