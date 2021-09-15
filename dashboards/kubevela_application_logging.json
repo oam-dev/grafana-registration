@@ -17,7 +17,7 @@
   "gnetId": 12611,
   "graphTooltip": 0,
   "id": 7,
-  "iteration": 1631628629367,
+  "iteration": 1631628815181,
   "links": [],
   "panels": [
     {
@@ -628,15 +628,15 @@
         "allValue": null,
         "current": {
           "selected": false,
-          "text": "kubevela",
-          "value": "kubevela"
+          "text": "grafana",
+          "value": "grafana"
         },
         "datasource": "loki",
         "definition": "label_values({container=~\".+\"}, container)",
         "description": null,
         "error": null,
         "hide": 0,
-        "includeAll": false,
+        "includeAll": true,
         "label": "Service",
         "multi": false,
         "name": "container",
@@ -707,7 +707,7 @@
       },
       {
         "current": {
-          "selected": false,
+          "selected": true,
           "text": "",
           "value": ""
         },
@@ -746,8 +746,8 @@
       "1d"
     ]
   },
-  "timezone": "",
-  "title": "KubeVela Core Logging Dashboard",
-  "uid": "kubevela_core_logging",
-  "version": 12
+"timezone": "",
+  "title": "KubeVela Application Logging Dashboard",
+  "uid": "kubevela_application_logging",
+  "version": 1
 }
