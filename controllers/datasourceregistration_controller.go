@@ -18,16 +18,17 @@ package controllers
 
 import (
 	"context"
-	"github.com/grafana-tools/sdk"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/grafana-tools/sdk"
 	"github.com/pkg/errors"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/zzxwill/grafana-configuration/api/v1alpha1"
 )
@@ -61,14 +62,32 @@ func (r *DatasourceRegistrationReconciler) Reconcile(req ctrl.Request) (ctrl.Res
 		"Name", dsr.Spec.Grafana.Service)
 	grafanaURL, err := getServiceURL(ctx, r.Client, dsr.Spec.Grafana.Namespace, dsr.Spec.Grafana.Service)
 	if err != nil {
-		return ctrl.Result{}, err
+		if dsr.ObjectMeta.DeletionTimestamp.IsZero() {
+			return ctrl.Result{}, err
+		}
+		if controllerutil.ContainsFinalizer(&dsr, datasourceRegistrationfinalizer) {
+			controllerutil.RemoveFinalizer(&dsr, datasourceRegistrationfinalizer)
+			if err := r.Update(ctx, &dsr); err != nil {
+				return ctrl.Result{RequeueAfter: 3 * time.Second}, errors.Wrap(err, "failed to remove finalizer")
+			}
+		}
+		return ctrl.Result{}, nil
 	}
 
 	klog.InfoS("Trying to retrieve Datasource Service", "Namespace", dsr.Spec.Grafana.Namespace,
 		"Name", dsr.Spec.Grafana.Service)
 	dataSourceURL, err := getServiceURL(ctx, r.Client, dsr.Spec.Datasource.Namespace, dsr.Spec.Datasource.Service)
 	if err != nil {
-		return ctrl.Result{}, err
+		if dsr.ObjectMeta.DeletionTimestamp.IsZero() {
+			return ctrl.Result{}, err
+		}
+		if controllerutil.ContainsFinalizer(&dsr, datasourceRegistrationfinalizer) {
+			controllerutil.RemoveFinalizer(&dsr, datasourceRegistrationfinalizer)
+			if err := r.Update(ctx, &dsr); err != nil {
+				return ctrl.Result{RequeueAfter: 3 * time.Second}, errors.Wrap(err, "failed to remove finalizer")
+			}
+		}
+		return ctrl.Result{}, nil
 	}
 
 	if err := datasourceOperation(ctx, r.Client, dsr, grafanaURL, dataSourceURL); err != nil {

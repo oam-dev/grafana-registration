@@ -18,3 +18,5 @@ bin
 .idea/
 
 grafana-configuration-chart-*
+
+.DS_Store
