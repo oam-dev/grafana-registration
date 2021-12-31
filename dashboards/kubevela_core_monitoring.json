@@ -79,7 +79,7 @@
       },
       "id": 65,
       "panels": [],
-      "title": "Summary of KubeVela Core Resources",
+      "title": "Summary of Resources",
       "type": "row"
     },
     {
@@ -1112,7 +1112,7 @@
       "isNew": false,
       "panels": [],
       "span": 0,
-      "title": "KubeVela Core Resource Usage Chart",
+      "title": "Resource Usage Chart",
       "type": "row"
     },
     {
@@ -1443,7 +1443,7 @@
       },
       "id": 43,
       "panels": [],
-      "title": "KubeVela Core network bandwidth",
+      "title": "Network bandwidth",
       "type": "row"
     },
     {
@@ -1545,7 +1545,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "KubeVela Core network bandwidth per second",
+      "title": "Network bandwidth per second",
       "tooltip": {
         "msResolution": false,
         "shared": true,
@@ -1745,7 +1745,7 @@
     ]
   },
   "timezone": "browser",
-  "title": "KubeVela Core System Monitoring Dashboard",
+  "title": "System Monitoring Dashboard",
   "uid": "kubevela_core_monitoring",
   "version": 6
 }
