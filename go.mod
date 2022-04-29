@@ -16,4 +16,4 @@ require (
 	sigs.k8s.io/controller-runtime v0.6.2
 )
 
-replace github.com/grafana-tools/sdk v0.0.0-20210714133701-11b1efc100c9 => github.com/zzxwill/grafana-sdk v0.9.4
+replace github.com/grafana-tools/sdk v0.0.0-20210714133701-11b1efc100c9 => github.com/kubevela-contrib/grafana-sdk v0.9.5-0.20220428052213-cec5f5a9efd8
